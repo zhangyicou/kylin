@@ -18,6 +18,8 @@
 
 package org.apache.kylin.provision;
 
+import static java.lang.Thread.sleep;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -32,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.Lists;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.common.requests.MetadataResponse;
@@ -64,7 +65,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Thread.sleep;
+import com.google.common.collect.Lists;
 
 /**
  *  for streaming cubing case "test_streaming_table"
@@ -323,6 +324,5 @@ public class BuildCubeWithStream {
             logger.error("error", e);
             System.exit(1);
         }
-
     }
 }
