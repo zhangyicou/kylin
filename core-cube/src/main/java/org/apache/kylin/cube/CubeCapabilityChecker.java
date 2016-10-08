@@ -75,22 +75,34 @@ public class CubeCapabilityChecker {
         tryCustomMeasureTypes(unmatchedDimensions, unmatchedAggregations, digest, cube, result);
         //        }
 
-        // try dimension-as-measure
-        if (!unmatchedAggregations.isEmpty()) {
-            if (cube.getDescriptor().getFactTable().equals(digest.factTable)) {
+        //more tricks
+        if (cube.getDescriptor().getFactTable().equals(digest.factTable)) {
+            //for query-on-facttable
+            //1. dimension as measure
+
+            if (!unmatchedAggregations.isEmpty()) {
                 tryDimensionAsMeasures(unmatchedAggregations, digest, cube, result, cube.getDescriptor().listDimensionColumnsIncludingDerived());
-            } else {
-                //deal with query on lookup table, like https://issues.apache.org/jira/browse/KYLIN-2030
-                if (cube.getSegments().get(0).getSnapshots().containsKey(digest.factTable)) {
-                    TableDesc tableDesc = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getTableDesc(digest.factTable);
-                    Set<TblColRef> dimCols = Sets.newHashSet();
-                    for (ColumnDesc columnDesc : tableDesc.getColumns()) {
-                        dimCols.add(columnDesc.getRef());
-                    }
-                    tryDimensionAsMeasures(unmatchedAggregations, digest, cube, result, dimCols);
-                } else {
-                    logger.info("Skip tryDimensionAsMeasures because current cube {} does not touch lookup table {} at all", cube.getName(), digest.factTable);
+            }
+        } else {
+            //for non query-on-facttable 
+            if (cube.getSegments().get(0).getSnapshots().containsKey(digest.factTable)) {
+                TableDesc tableDesc = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getTableDesc(digest.factTable);
+                Set<TblColRef> dimCols = Sets.newHashSet();
+                for (ColumnDesc columnDesc : tableDesc.getColumns()) {
+                    dimCols.add(columnDesc.getRef());
                 }
+
+                //1. dimension as measure, like max(cal_dt) or count( distinct col) from lookup
+                if (!unmatchedAggregations.isEmpty()) {
+                    tryDimensionAsMeasures(unmatchedAggregations, digest, cube, result, dimCols);
+                }
+
+                //2. more "dimensions" contributed by snapshot
+                if (!unmatchedDimensions.isEmpty()) {
+                    unmatchedDimensions.removeAll(dimCols);
+                }
+            } else {
+                logger.info("cube {} does not touch lookup table {} at all", cube.getName(), digest.factTable);
             }
         }
 

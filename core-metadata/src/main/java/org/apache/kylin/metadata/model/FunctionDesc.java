@@ -120,6 +120,7 @@ public class FunctionDesc {
     }
 
     public MeasureType<?> getMeasureType() {
+        //like max(cal_dt)
         if (isDimensionAsMetric && !isCountDistinct()) {
             return null;
         }
