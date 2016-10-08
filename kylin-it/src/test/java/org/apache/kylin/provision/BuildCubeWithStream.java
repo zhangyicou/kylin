@@ -18,6 +18,8 @@
 
 package org.apache.kylin.provision;
 
+import static java.lang.Thread.sleep;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -32,10 +34,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.collect.Lists;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.util.ToolRunner;
 import org.apache.kafka.common.requests.MetadataResponse;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.common.util.ClassUtil;
@@ -65,7 +65,7 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Thread.sleep;
+import com.google.common.collect.Lists;
 
 /**
  *  for streaming cubing case "test_streaming_table"
@@ -205,7 +205,7 @@ public class BuildCubeWithStream {
         for (int i = 0; i < futures.size(); i++) {
             ExecutableState result = futures.get(i).get(20, TimeUnit.MINUTES);
             logger.info("Checking building task " + i + " whose state is " + result);
-            Assert.assertTrue(result == null || result == ExecutableState.SUCCEED || result == ExecutableState.DISCARDED );
+            Assert.assertTrue(result == null || result == ExecutableState.SUCCEED || result == ExecutableState.DISCARDED);
             if (result == ExecutableState.SUCCEED)
                 succeedBuild++;
         }
@@ -213,7 +213,6 @@ public class BuildCubeWithStream {
         logger.info(succeedBuild + " build jobs have been successfully completed.");
         List<CubeSegment> segments = cubeManager.getCube(cubeName).getSegments(SegmentStatusEnum.READY);
         Assert.assertTrue(segments.size() == succeedBuild);
-
 
         if (fastBuildMode == false) {
             //empty build
@@ -237,7 +236,6 @@ public class BuildCubeWithStream {
 
         logger.info("Build is done");
     }
-
 
     private ExecutableState mergeSegment(String cubeName, long startOffset, long endOffset) throws Exception {
         CubeSegment segment = cubeManager.mergeSegments(cubeManager.getCube(cubeName), 0, 0, startOffset, endOffset, false);
@@ -279,14 +277,12 @@ public class BuildCubeWithStream {
         HBaseMetadataTestCase.staticCreateTestMetadata(HBaseMetadataTestCase.SANDBOX_TEST_DATA);
     }
 
-    public static void afterClass() throws Exception {
-        cleanupOldStorage();
-        HBaseMetadataTestCase.staticCleanupTestMetadata();
-    }
-
     public void after() {
         kafkaServer.stop();
         DefaultScheduler.destroyInstance();
+
+        cleanupOldStorage();
+        HBaseMetadataTestCase.staticCleanupTestMetadata();
     }
 
     protected void waitForJob(String jobId) {
@@ -304,7 +300,7 @@ public class BuildCubeWithStream {
         }
     }
 
-    private static void cleanupOldStorage() throws Exception {
+    protected void cleanupOldStorage() {
         String[] args = { "--delete", "true" };
         StorageCleanupJob cli = new StorageCleanupJob();
         cli.execute(args);
@@ -317,17 +313,12 @@ public class BuildCubeWithStream {
             buildCubeWithStream = new BuildCubeWithStream();
             buildCubeWithStream.before();
             buildCubeWithStream.build();
+            buildCubeWithStream.after();
             logger.info("Going to exit");
             System.exit(0);
         } catch (Throwable e) {
             logger.error("error", e);
             System.exit(1);
-        } finally {
-            if (buildCubeWithStream != null) {
-                buildCubeWithStream.after();
-            }
-            afterClass();
         }
-
     }
 }
