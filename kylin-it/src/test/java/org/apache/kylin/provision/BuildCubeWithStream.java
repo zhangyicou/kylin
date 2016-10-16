@@ -316,6 +316,7 @@ public class BuildCubeWithStream {
             buildCubeWithStream.build();
             logger.info("Build is done");
             buildCubeWithStream.cleanup();
+            buildCubeWithStream.after();
             logger.info("Going to exit");
             System.exit(0);
         } catch (Throwable e) {
